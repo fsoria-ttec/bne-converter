@@ -1,0 +1,32 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Iniciar Modo Manual",
+            "type": "go",
+            "request": "launch",
+            "mode": "auto",
+            "program": "${workspaceFolder}/cmd/main.go",
+            "args": ["-manual"],
+            "env": {}
+        },
+        {
+            "name": "Iniciar Modo Monitor",
+            "type": "go",
+            "request": "launch",
+            "mode": "auto",
+            "program": "${workspaceFolder}/cmd/main.go",
+            "args": [],
+            "env": {}
+        },
+        {
+            "name": "Iniciar Modo Forzar",
+            "type": "go",
+            "request": "launch",
+            "mode": "auto",
+            "program": "${workspaceFolder}/cmd/main.go",
+            "args": ["-forzar"],
+            "env": {}
+        }
+    ]
+}

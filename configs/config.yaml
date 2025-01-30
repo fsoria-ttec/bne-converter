@@ -1,0 +1,45 @@
+database:
+  host: localhost
+  port: 5432
+  user: postgres
+  password: postgres
+  name: bne_converter
+  sslmode: disable
+
+crawler:
+  base_url: "https://www.bne.es/redBNE/alma/SuministroRegistros/Bibliograficos/"
+  check_interval: "1h"
+  download_path: "./downloads"
+  max_concurrent_downloads: 10
+  retry_attemps: 3
+  retry_delay: "10s"
+  categories:
+    - GRAFNOPRO
+    - GRAFPRO
+    - GRABSONORA
+    - KIT
+    - MANUSCRITO
+    - CARTOGRAFI
+    - MATEMIXTO
+    - MONOANTIGU
+    - MONOMODERN
+    - MUSICAESC
+    - RECELECTRO
+    - SERIADA
+    - VIDEO
+  manual_mode:
+    delete_after: false
+    selected_categories: []
+
+monitor:
+  check_interval: "1h"
+  timeout: "30s"
+
+logging:
+  level: "debug"
+  format: "custom"
+  timestamp_format: "02-01-2006 15:04:05"
+  output: "stdout"
+  file_output: "./logs/bne-converter.log"
+  show_caller: false
+  show_function: false
