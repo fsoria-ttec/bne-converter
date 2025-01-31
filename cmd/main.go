@@ -11,9 +11,10 @@ import (
 	"github.com/fsoria-ttec/bne-converter/internal/config"
 	"github.com/fsoria-ttec/bne-converter/internal/crawler"
 	"github.com/fsoria-ttec/bne-converter/internal/logger"
+	"github.com/fsoria-ttec/bne-converter/internal/logo"
 	"github.com/fsoria-ttec/bne-converter/internal/monitor"
 	"github.com/fsoria-ttec/bne-converter/internal/spinner"
-	"github.com/sirupsen/logrus"
+	"github.com/sirupsen/logrus" // logging
 )
 
 type RunMode struct {
@@ -21,21 +22,24 @@ type RunMode struct {
 	Monitor     bool
 	ForceUpdate bool
 	Debug       bool
+	Version     bool
 }
 
 func main() {
 
-	// Configurar flags
+	// Flags
 	mode := parseFlags()
 
-	// Detectar si la terminal soporta colores
+	// Detectar si terminal soporta colores
 	useColors := true
 	if fileInfo, _ := os.Stdout.Stat(); (fileInfo.Mode() & os.ModeCharDevice) == 0 {
 		useColors = false
 	}
 
-	// Cargar configuración inicial y configurar logger
+	// Configuración inicial
 	cfg, err := config.Load()
+
+	// Logger
 	log := logrus.New()
 	log.SetOutput(os.Stdout)
 
@@ -45,38 +49,43 @@ func main() {
 
 	log.SetFormatter(logger.NewCustomFormatter(cfg.Logging, useColors))
 
-	if mode.Debug {
-		log.SetLevel(logrus.DebugLevel)
-		log.Debugf("Debug activado")
-	} else {
-		log.SetLevel(cfg.Logging.GetLogLevel()) // establecer nivel de config.yaml
+	if mode.Version {
+		logo.Print(log, cfg)
+		os.Exit(0)
 	}
 
-	// Configurar contexto con cancelación
+	// Manejar modo -debug
+	if mode.Debug {
+		log.SetLevel(logrus.DebugLevel)
+		log.Debugf("Modo Debug activo")
+	} else {
+		log.SetLevel(cfg.Logging.GetLogLevel()) // obtener nivel de config.yaml
+	}
+
+	// Contexto con cancelación
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
 	// Inicializar crawler
-	crw := crawler.New(cfg, log)
+	crw, err := crawler.New(cfg, log)
+	if err != nil {
+		log.Fatalf("Error al inicializar crawler: %v", err)
+	}
 
-	// Manejar modo manual
+	// Manejar modo -manual
 	if mode.Manual {
-		log.Info("Ejecutando en modo manual")
+		log.Info("Modo Manual activo")
 		if err := runManualMode(ctx, cfg, crw, log); err != nil {
 			log.Fatalf("Error al ejecutar el modo manual: %v", err)
 		}
 		return
 	}
 
-	// Inicializar monitor (modo por defecto)
-	mon := monitor.New(cfg, log)
-	changes, errs := mon.Start(ctx)
-
-	// Manejo de señales
+	// Manejar señales
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
 
-	// Manejar modo de forzar actualización
+	// Manejar modo -forzar
 	if mode.ForceUpdate {
 		log.Info("Actualización forzada solicitada")
 		go func() {
@@ -95,8 +104,10 @@ func main() {
 		}()
 	}
 
-	// Procesar cambios y errores (modo monitor)
-	log.Info("Ejecutando en modo monitor")
+	// Manejar modo monitor (opción por defecto)
+	mon := monitor.New(cfg, log)
+	changes, errs := mon.Start(ctx)
+	log.Info("Modo Monitor activo")
 
 	// Iniciar spinner
 	spin := spinner.New("Monitorizando cambios...")
@@ -147,10 +158,11 @@ func main() {
 func parseFlags() RunMode {
 	mode := RunMode{}
 
-	flag.BoolVar(&mode.Manual, "manual", false, "Ejecutar en modo manual")
-	flag.BoolVar(&mode.Monitor, "monitor", false, "Ejecutar en modo monitor")
+	flag.BoolVar(&mode.Manual, "manual", false, "Ejecutar en Modo Manual: comprobar descarga de los archivos MARC para actualizar BBDD y CKAN")
+	flag.BoolVar(&mode.Monitor, "monitor", false, "Ejecutar en Modo Monitor: monitorizar web del BNE en tiempo real para comprobar actualizaciones de ficheros MARC")
 	flag.BoolVar(&mode.ForceUpdate, "forzar", false, "Forzar actualización y monitorizar")
 	flag.BoolVar(&mode.Debug, "debug", false, "Activar logs de debug")
+	flag.BoolVar(&mode.Version, "version", false, "Información de versión")
 
 	flag.Parse()
 	return mode
@@ -158,18 +170,16 @@ func parseFlags() RunMode {
 
 func runManualMode(ctx context.Context, cfg *config.Config, crw *crawler.Crawler,
 	log *logrus.Logger) error {
-	log.Info("Ejecutando descarga...")
+	log.Infof("Ejecutando descarga en %s...", cfg.Crawler.DownloadPath)
 
 	results := crw.DownloadAll(ctx)
 
 	var hasErrors bool
 	for _, result := range results {
 		if result.Error != nil {
-			log.Errorf("Error al descargar %s: %v", result.Category, result.Error)
 			hasErrors = true
 			continue
 		}
-		log.Infof("Descarga completada para %s en %s", result.Category, result.FilePath)
 
 		if err := processDownloadedFile(ctx, result.FilePath, log); err != nil {
 			log.Errorf("Error al procesar %s: %v", result.FilePath, err)

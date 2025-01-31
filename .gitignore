@@ -1,0 +1,20 @@
+# Carpetas de descargas y logs
+mrc/
+logs/
+
+# Archivos binarios y temporales
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+
+# Archivos temporales
+*.tmp
+
+# Metadata y logs
+metadata.json
+launch.json
+*.log

@@ -5,10 +5,11 @@ import (
 	"time"
 
 	"github.com/sirupsen/logrus" // logging
-	"github.com/spf13/viper"
+	"github.com/spf13/viper"     // config
 )
 
 type Config struct {
+	Version  string `mapstructure:"version"`
 	Database DatabaseConfig
 	Crawler  CrawlerConfig
 	Monitor  MonitorConfig

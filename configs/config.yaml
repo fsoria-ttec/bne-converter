@@ -1,3 +1,5 @@
+version: "1.0.0"
+
 database:
   host: localhost
   port: 5432
@@ -9,10 +11,10 @@ database:
 crawler:
   base_url: "https://www.bne.es/redBNE/alma/SuministroRegistros/Bibliograficos/"
   check_interval: "1h"
-  download_path: "./downloads"
+  download_path: "./mrc"
   max_concurrent_downloads: 10
-  retry_attemps: 3
-  retry_delay: "10s"
+  retry_attempts: 3
+  retry_delay: "1s"
   categories:
     - GRAFNOPRO
     - GRAFPRO
@@ -36,7 +38,7 @@ monitor:
   timeout: "30s"
 
 logging:
-  level: "debug"
+  level: "info"
   format: "custom"
   timestamp_format: "02-01-2006 15:04:05"
   output: "stdout"
